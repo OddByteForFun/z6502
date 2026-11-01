@@ -302,14 +302,18 @@ pub const Keyboard = struct {
 
         const layout_mapping: ?MappingResult = switch (self.layout) {
             .azerty => switch (sym) {
-                // Key 1: unshifted '&' (Shift+7 on Oric), Shift '1'
-                '1' => if (is_shift)
+                // Key 1: unshifted '&' (sym '&' or '1' unshifted), Shift '1'
+                '&', '1' => if (is_altgr)
+                    null
+                else if (is_shift)
                     .{ .row = 0, .col = 5, .synth_shift = false, .supp_shift = true }
                 else
-                    .{ .row = 0, .col = 0, .synth_shift = true, .supp_shift = false },
+                    .{ .row = 0, .col = 5, .synth_shift = false, .supp_shift = false },
 
-                // Key 2: unshifted 'é', Shift '2'
-                '2' => if (is_shift)
+                // Key 2: unshifted 'é' (0xE9) or '2', Shift '2'
+                0xE9, '2' => if (is_altgr)
+                    .{ .row = 2, .col = 1, .synth_shift = true, .supp_shift = false } // AltGr '~' -> Oric '^'
+                else if (is_shift)
                     .{ .row = 2, .col = 6, .synth_shift = false, .supp_shift = true }
                 else
                     .{ .row = 2, .col = 6, .synth_shift = false, .supp_shift = false },
@@ -346,8 +350,10 @@ pub const Keyboard = struct {
                 else
                     .{ .row = 3, .col = 3, .synth_shift = false, .supp_shift = false },
 
-                // Key 7: unshifted 'è', Shift '7'
-                '7' => if (is_shift)
+                // Key 7: unshifted 'è' (0xE8) or '7', Shift '7'
+                0xE8, '7' => if (is_altgr)
+                    .{ .row = 3, .col = 7, .synth_shift = false, .supp_shift = false } // AltGr '`'
+                else if (is_shift)
                     .{ .row = 0, .col = 0, .synth_shift = false, .supp_shift = true }
                 else
                     .{ .row = 0, .col = 0, .synth_shift = false, .supp_shift = false },
@@ -360,21 +366,21 @@ pub const Keyboard = struct {
                 else
                     .{ .row = 3, .col = 3, .synth_shift = true, .supp_shift = false },
 
-                // Key 9: unshifted 'ç', Shift '9', AltGr '^'
-                '9' => if (is_altgr)
+                // Key 9: unshifted 'ç' (0xE7) or '9', Shift '9', AltGr '^'
+                0xE7, '9' => if (is_altgr)
                     .{ .row = 2, .col = 1, .synth_shift = true, .supp_shift = false }
                 else if (is_shift)
                     .{ .row = 3, .col = 1, .synth_shift = false, .supp_shift = true }
                 else
-                    .{ .row = 2, .col = 7, .synth_shift = false, .supp_shift = false },
+                    .{ .row = 3, .col = 1, .synth_shift = false, .supp_shift = false },
 
-                // Key 0: unshifted 'à', Shift '0', AltGr '@'
-                '0' => if (is_altgr)
+                // Key 0: unshifted 'à' (0xE0) or '0', Shift '0', AltGr '@'
+                0xE0, '0' => if (is_altgr)
                     .{ .row = 2, .col = 6, .synth_shift = true, .supp_shift = false }
                 else if (is_shift)
                     .{ .row = 7, .col = 2, .synth_shift = false, .supp_shift = true }
                 else
-                    .{ .row = 6, .col = 5, .synth_shift = false, .supp_shift = false },
+                    .{ .row = 7, .col = 2, .synth_shift = false, .supp_shift = false },
 
                 // Key ): unshifted ')', AltGr ']'
                 ')' => if (is_altgr)
@@ -575,4 +581,25 @@ test "azerty key 4 variations" {
     try std.testing.expectEqual(@as(u8, 0), kbd.matrix[4] & (1 << 4));
     kbd.handle_key('4', sdl.KMOD_LSHIFT, false);
     kbd.handle_key(0x400000E1, 0, false);
+}
+
+test "azerty key 2 variations" {
+    var kbd = Keyboard.init();
+    kbd.layout = .azerty;
+
+    // 1. Unshifted key 2 (0xE9 for 'é'): produces digit 2 (row 2 col 6 without Shift)
+    kbd.handle_key(0xE9, 0, true);
+    try std.testing.expect((kbd.matrix[2] & (1 << 6)) != 0);
+    try std.testing.expectEqual(@as(u8, 0), kbd.matrix[4] & (1 << 4)); // Shift not pressed
+    kbd.handle_key(0xE9, 0, false);
+    try std.testing.expectEqual(@as(u8, 0), kbd.matrix[2] & (1 << 6));
+
+    // 2. Shifted key 2 ('2'): produces digit 2 with Shift suppressed on Oric
+    kbd.handle_key(0x400000E1, sdl.KMOD_LSHIFT, true);
+    kbd.handle_key('2', sdl.KMOD_LSHIFT, true);
+    try std.testing.expect((kbd.matrix[2] & (1 << 6)) != 0);
+    try std.testing.expectEqual(@as(u8, 0), kbd.matrix[4] & (1 << 4)); // Shift suppressed!
+    kbd.handle_key('2', sdl.KMOD_LSHIFT, false);
+    kbd.handle_key(0x400000E1, 0, false);
+    try std.testing.expectEqual(@as(u8, 0), kbd.matrix[2] & (1 << 6));
 }

@@ -65,7 +65,12 @@ pub const Oric = struct {
 
         if (auto_run or inject.auto_run) {
             if (inject.is_mc) {
-                // For machine code, jump directly to start address
+                // Set up stack with return address to BASIC statement loop ($C8C4)
+                // so that JMP $C708 (RUN) or RTS from machine code enters/returns to BASIC.
+                // 6502 stack pushes High byte first to SP, then Low byte to SP-1.
+                self.cpu.sp = 0xFD;
+                self.bus.ram[0x01FF] = 0xC8;
+                self.bus.ram[0x01FE] = 0xC3;
                 self.cpu.pc = inject.start_addr;
             } else {
                 // For BASIC, type RUN
@@ -77,7 +82,7 @@ pub const Oric = struct {
     }
 
     /// Fast-load trap for Oric tape routines (TAPESYNC & GETTAPEBYTE)
-    fn check_tape_trap(self: *Oric) bool {
+    pub fn check_tape_trap(self: *Oric) bool {
         if (self.tape.raw_bytes.len == 0) {
             return false;
         }

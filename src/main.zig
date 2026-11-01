@@ -209,6 +209,8 @@ pub fn main(init: std.process.Init.Minimal) !void {
 
     if (audio_dev != 0) {
         sdl.SDL_PauseAudioDevice(audio_dev, 0);
+    } else if (!config.mute) {
+        std.debug.print("[Audio] Avertissement: Impossible d'ouvrir le périphérique audio SDL: {s}\n", .{sdl.SDL_GetError()});
     }
 
     var event: sdl.SDL_Event = undefined;

@@ -96,8 +96,12 @@ pub const Video = struct {
             } else if (mode_byte >= 24 and mode_byte <= 27) {
                 initial_hires = false;
             }
-        } else if (ram[0x021F] != 0 or ((ram[0x02C0] & 1) != 0)) {
-            initial_hires = true;
+        } else {
+            if (ram[0x021F] != 0 or ((ram[0x02C0] & 1) != 0)) {
+                initial_hires = true;
+            } else {
+                initial_hires = false;
+            }
         }
 
         self.hires_mode = initial_hires;
