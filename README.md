@@ -2,10 +2,6 @@
 
 Un émulateur complet, performant et autonome des micro-ordinateurs 8-bits **Oric Atmos** et **Oric 1** (Tangerine Computer Systems, 1983-1984), écrit en langage **Zig 0.16**.
 
-Conçu à l'instar du projet de référence en Rust (`mos6502`), ce projet implémente avec précision l'ensemble des composants matériels de la machine en tirant parti des atouts de Zig : absence d'allocations cachées, métaprogrammation comptime, interopérabilité C native sans surcoût et contrôle bas niveau strict.
-
----
-
 ## 🌟 Fonctionnalités
 
 - **Microprocesseur MOS 6502 cycle-accurate** :
